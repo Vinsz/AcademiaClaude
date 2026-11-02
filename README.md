@@ -1,15 +1,20 @@
 # Treino
 
-App web para registrar os treinos A, B, C e D, com pontos, sequência semanal, caminhadas e metas de peso.
-Funciona offline e pode ser instalado na tela inicial do celular. Os dados ficam só no aparelho (há exportar/importar backup em Histórico → Dados).
+App para registrar os treinos A, B, C e D, com pontos, sequência semanal, caminhadas e metas de peso.
 
-## Como usar no celular
+## Onde usar
 
-1. Publique a pasta (por exemplo, GitHub Pages: Settings → Pages → branch com estes arquivos, pasta `/`).
-2. Abra o endereço no celular.
-3. iPhone (Safari): Compartilhar → Adicionar à Tela de Início. Android (Chrome): menu → Instalar app.
+**Página privada no claude.ai (principal).** `dist/treino-claude.html` publicado como artifact.
+Os dados ficam na conta do claude.ai, visíveis só para o dono (regra de acesso `owner` na raiz),
+e aparecem em qualquer aparelho. Backup em Histórico → Dados → Exportar.
 
-Para testar no computador: `python3 -m http.server` nesta pasta e abrir `http://localhost:8000`.
+**Arquivo único.** `dist/treino.html` abre direto no navegador (notebook). Os dados ficam no navegador
+daquele aparelho. Para trazer o histórico, importe `historico-inicial.json` ou um backup exportado.
+
+**Site (opcional).** `index.html` + arquivos funcionam como app instalável (PWA) se publicados.
+O histórico não está no código, então o site publicado não expõe dados pessoais.
+
+Para gerar os arquivos de `dist/` depois de mudar o código: `node build.mjs`.
 
 ## Regras
 
@@ -30,7 +35,9 @@ Para testar no computador: `python3 -m http.server` nesta pasta e abrir `http://
 
 ## Arquivos
 
-- `data.js`: treinos, exercícios, metas, pontos e o histórico inicial (20/10 a 02/11/2026).
+- `data.js`: treinos, exercícios, metas e pontos.
+- `historico-inicial.json`: histórico de 20/10 a 02/11/2026 no formato de backup.
+- `build.mjs`: gera `dist/treino.html` e `dist/treino-claude.html`.
 - `logic.js`: cálculo de pontos, recordes, sequência, metas e sugestões.
-- `app.js`: telas e eventos.
+- `app.js`: telas, eventos e armazenamento (conta do claude.ai ou navegador).
 - `sw.js`: cache offline. Ao alterar arquivos, suba a versão em `CACHE`.

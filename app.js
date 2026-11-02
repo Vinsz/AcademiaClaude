@@ -1,4 +1,4 @@
-import { WORKOUTS, SEED_SESSIONS, SEED_WEIGHTS, POINTS } from './data.js';
+import { WORKOUTS, POINTS } from './data.js';
 import {
   todayStr, weekOf, fmtDate, fmtNum, exDef, sortSessions, lastEntry, fmtSets,
   computeRecords, sessionBasePoints, totals, weekly, weightInfo, goalsProgress,
@@ -6,48 +6,218 @@ import {
 } from './logic.js';
 
 // ---------- armazenamento ----------
-const KEY = 'treino.v1';
+// Dois modos:
+//  'db'    -> aberto no claude.ai: dados salvos na conta (visíveis só para o dono)
+//  'local' -> arquivo/site comum: dados no navegador deste aparelho
+// O treino em andamento (rascunho) fica sempre no navegador.
+const LOCAL_KEY = 'treino.v2';
+const OLD_KEY = 'treino.v1';
+const DRAFT_KEY = 'treino.draft';
+
 let storageOk = true;
+let mode = 'local';
+let db = null;
+let loadState = 'loading'; // loading | ready | slow | error
+let dbError = '';
+
+let state = { sessions: [], walkDocs: [], walks: [], weights: [], draft: null, rest: {} };
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
-function freshState() {
+function lsGet(k) {
+  try { return localStorage.getItem(k); } catch (e) { return null; }
+}
+function lsSet(k, v) {
+  try { localStorage.setItem(k, v); return true; } catch (e) { return false; }
+}
+
+function syncWalks() {
+  state.walks = state.walkDocs.map((w) => w.at).sort();
+}
+
+function save() {
+  // só o rascunho; os dados vão por ops.*
+  lsSet(DRAFT_KEY, JSON.stringify(state.draft));
+}
+
+function saveLocal() {
+  if (mode !== 'local') return;
+  storageOk = lsSet(LOCAL_KEY, JSON.stringify({
+    sessions: state.sessions, walkDocs: state.walkDocs, weights: state.weights, rest: state.rest,
+  }));
+}
+
+function loadLocal() {
+  const raw = lsGet(LOCAL_KEY);
+  try {
+    if (raw) {
+      const d = JSON.parse(raw);
+      state.sessions = d.sessions || [];
+      state.walkDocs = d.walkDocs || [];
+      state.weights = d.weights || [];
+      state.rest = d.rest || {};
+    } else {
+      const old = lsGet(OLD_KEY);
+      if (old) {
+        const d = JSON.parse(old);
+        state.sessions = d.sessions || [];
+        state.walkDocs = (d.walks || []).map((at) => ({ id: uid(), at }));
+        state.weights = d.weights || [];
+        state.rest = d.rest || {};
+        if (d.draft && !lsGet(DRAFT_KEY)) state.draft = d.draft;
+        saveLocal();
+      }
+    }
+  } catch (e) { /* dados corrompidos: começa vazio */ }
+  syncWalks();
+}
+
+function loadDraft() {
+  try {
+    const d = JSON.parse(lsGet(DRAFT_KEY) || 'null');
+    if (d) state.draft = d;
+  } catch (e) { /* sem rascunho */ }
+}
+
+async function persist(fn) {
+  if (mode !== 'db') { saveLocal(); return; }
+  try {
+    await fn();
+  } catch (e) {
+    toast(`Não foi possível salvar (${e?.code || 'erro'}). Tente de novo.`);
+  }
+}
+
+// Cada operação atualiza o estado na hora e depois grava.
+const ops = {
+  addSession(s) {
+    state.sessions = [...state.sessions, s];
+    return persist(() => db.doc(`sessions/${s.id}`).set(s));
+  },
+  delSession(id) {
+    state.sessions = state.sessions.filter((s) => s.id !== id);
+    return persist(() => db.doc(`sessions/${id}`).delete());
+  },
+  addWalk(w) {
+    state.walkDocs = [...state.walkDocs, w];
+    syncWalks();
+    return persist(() => db.doc(`walks/${w.id}`).set({ at: w.at }));
+  },
+  delWalk(id) {
+    state.walkDocs = state.walkDocs.filter((w) => w.id !== id);
+    syncWalks();
+    return persist(() => db.doc(`walks/${id}`).delete());
+  },
+  setWeight(w) {
+    state.weights = [...state.weights.filter((x) => x.date !== w.date), w];
+    return persist(() => db.doc(`weights/${w.date}`).set(w));
+  },
+  delWeight(date) {
+    state.weights = state.weights.filter((x) => x.date !== date);
+    return persist(() => db.doc(`weights/${date}`).delete());
+  },
+  setRest(rest) {
+    state.rest = rest;
+    return persist(() => db.doc('app/settings').set({ rest }));
+  },
+  async replaceAll(data) {
+    const old = { sessions: state.sessions, walkDocs: state.walkDocs, weights: state.weights };
+    state.sessions = data.sessions;
+    state.walkDocs = data.walkDocs;
+    state.weights = data.weights;
+    state.rest = data.rest;
+    syncWalks();
+    if (mode !== 'db') { saveLocal(); return; }
+    for (const s of old.sessions) await db.doc(`sessions/${s.id}`).delete();
+    for (const w of old.walkDocs) await db.doc(`walks/${w.id}`).delete();
+    for (const w of old.weights) await db.doc(`weights/${w.date}`).delete();
+    for (const s of data.sessions) await db.doc(`sessions/${s.id}`).set(s);
+    for (const w of data.walkDocs) await db.doc(`walks/${w.id}`).set({ at: w.at });
+    for (const w of data.weights) await db.doc(`weights/${w.date}`).set(w);
+    await db.doc('app/settings').set({ rest: data.rest });
+  },
+};
+
+function exportData() {
+  return { version: 2, exported: new Date().toISOString(), sessions: state.sessions, walks: state.walkDocs, weights: state.weights, rest: state.rest };
+}
+
+function parseBackup(data) {
+  if (!Array.isArray(data.sessions) || !Array.isArray(data.weights)) throw new Error('formato');
+  const walks = (data.walks || []).map((w) => (typeof w === 'string' ? { id: uid(), at: w } : { id: w.id || uid(), at: w.at }));
   return {
-    version: 1,
-    sessions: SEED_SESSIONS.map((s, i) => ({ ...s, id: 'seed' + i, created: i, pain: false, heavy: false, note: s.note || '' })),
-    walks: [],
-    weights: [...SEED_WEIGHTS],
-    draft: null,
-    rest: {},
+    sessions: data.sessions.map((s) => ({ ...s, id: s.id || uid() })),
+    walkDocs: walks,
+    weights: data.weights,
+    rest: data.rest || {},
   };
 }
 
-function load() {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) {
-      const s = JSON.parse(raw);
-      return { ...freshState(), ...s, rest: s.rest || {} };
-    }
-  } catch (e) {
-    storageOk = false;
-  }
-  return freshState();
+function rerender() {
+  // não redesenha enquanto a pessoa digita no treino (perderia o foco)
+  const a = document.activeElement;
+  if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA') && tab === 'treino') return;
+  render();
 }
 
-let state = load();
-
-function save() {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(state));
-    storageOk = true;
-  } catch (e) {
-    storageOk = false;
+async function initDb() {
+  // Fora do claude.ai não existe window.claude: modo local.
+  for (let i = 0; i < 5 && !(window.claude && typeof window.claude.use === 'function'); i++) {
+    await new Promise((r) => setTimeout(r, 100));
   }
+  if (!(window.claude && typeof window.claude.use === 'function')) return false;
+  db = await window.claude.use('db');
+  if (!db) return false;
+
+  mode = 'db';
+  const pending = new Set(['sessions', 'walks', 'weights', 'app']);
+  const timer = setTimeout(() => {
+    if (pending.size) { loadState = 'slow'; rerender(); }
+  }, 10000);
+  const arrived = (name, snap) => {
+    if (!snap.metadata.fromCache) pending.delete(name);
+    if (!pending.size) { clearTimeout(timer); loadState = 'ready'; }
+    rerender();
+  };
+  const fail = (e) => {
+    clearTimeout(timer);
+    loadState = 'error';
+    dbError = e?.code || 'erro';
+    rerender();
+  };
+  db.collection('sessions').onSnapshot((snap) => {
+    state.sessions = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
+    arrived('sessions', snap);
+  }, fail);
+  db.collection('walks').onSnapshot((snap) => {
+    state.walkDocs = snap.docs.map((d) => ({ id: d.id, at: d.data().at }));
+    syncWalks();
+    arrived('walks', snap);
+  }, fail);
+  db.collection('weights').onSnapshot((snap) => {
+    state.weights = snap.docs.map((d) => ({ date: d.data().date, kg: d.data().kg }));
+    arrived('weights', snap);
+  }, fail);
+  db.doc('app/settings').onSnapshot((snap) => {
+    state.rest = { ...((snap.exists && snap.data().rest) || {}) };
+    arrived('app', snap);
+  }, fail);
+  return true;
 }
-save();
+
+// Confirmação própria (confirm() pode ser bloqueado dentro do claude.ai).
+function ask(msg, okLabel = 'Confirmar') {
+  return new Promise((resolve) => {
+    showModal(`
+      <p style="margin-bottom:18px">${esc(msg)}</p>
+      <button class="btn danger" data-act="ask-yes">${esc(okLabel)}</button>
+      <button class="btn secondary" data-act="ask-no" style="margin-top:10px">Cancelar</button>`);
+    askResolve = (v) => { $('#modal').hidden = true; askResolve = null; resolve(v); };
+  });
+}
+let askResolve = null;
 
 // ---------- utilidades ----------
 const $ = (sel) => document.querySelector(sel);
@@ -92,8 +262,15 @@ function viewHome() {
     lastLine = `<p class="tiny" style="margin-top:10px">Último: ${fmtDate(last.date)} · Treino ${last.workout} · +${base + recs * POINTS.record} pts${recs ? ` · ${recs} recorde${recs > 1 ? 's' : ''}` : ''}</p>`;
   }
 
+  let notice = '';
+  if (loadState === 'loading' && !state.sessions.length) return '<p class="muted" style="padding:40px 0;text-align:center">Carregando seus dados…</p>';
+  if (mode === 'db' && loadState === 'slow') notice = '<div class="card small chip reps">Não consegui confirmar os dados com o servidor ainda. O que aparece pode estar desatualizado.</div>';
+  if (mode === 'db' && loadState === 'error') notice = `<div class="card small chip care">Não foi possível acessar os dados (${esc(dbError)}). Recarregue a página.</div>`;
+  if (mode === 'local' && !storageOk) notice = '<div class="card small chip care">Não foi possível salvar neste navegador. Os dados podem se perder ao fechar.</div>';
+  if (mode === 'local' && !state.sessions.length && !state.weights.length) notice += '<div class="card small">Sem dados ainda. Para trazer seu histórico, vá em Histórico → Dados → Importar backup.</div>';
+
   return `
-    ${storageOk ? '' : '<div class="card chip care">Não foi possível salvar neste navegador. Os dados podem se perder ao fechar.</div>'}
+    ${notice}
     <div class="card">
       <div class="row between">
         <div><div class="tiny">Nível</div><div class="big-num">${t.level}</div></div>
@@ -263,7 +440,7 @@ function finishDraft() {
   const before = totals(state);
   const beforeWeek = weekly(state);
   const session = { id: uid(), created: Date.now(), date: d.date, workout: d.workout, entries, pain: d.pain, heavy: d.heavy, note: d.note.trim() };
-  state.sessions.push(session);
+  ops.addSession(session);
   state.draft = null;
   save();
   stopTimer();
@@ -349,7 +526,9 @@ function viewEvolution() {
 function viewData() {
   return `
     <div class="card stack">
-      <p class="small">Os dados ficam salvos só neste aparelho, neste navegador. Exporte de vez em quando para ter um backup.</p>
+      <p class="small">${mode === 'db'
+        ? 'Os dados ficam salvos na sua conta do claude.ai e aparecem em qualquer aparelho onde você abrir esta página. Só você tem acesso. Exporte de vez em quando para ter uma cópia sua.'
+        : 'Os dados ficam salvos só neste aparelho, neste navegador. Exporte de vez em quando para ter um backup.'}</p>
       <button class="btn" data-act="export">Exportar backup (.json)</button>
       <label class="btn secondary" style="text-align:center">Importar backup<input type="file" accept="application/json,.json" data-act="import" hidden></label>
       <p class="tiny">Importar substitui todos os dados atuais pelos do arquivo.</p>
@@ -484,9 +663,8 @@ function adjustTimer(d) {
   timer.end += d * 1000;
   timer.total = Math.max(15, timer.total + d);
   const ex = exDef(timer.exId);
-  state.rest[timer.exId] = Math.max(15, (state.rest[timer.exId] ?? ex.rest) + d);
+  ops.setRest({ ...state.rest, [timer.exId]: Math.max(15, (state.rest[timer.exId] ?? ex.rest) + d) });
   if (timer.fired && timer.end > Date.now()) { timer.fired = false; timer.hideAt = 0; $('#timer').classList.remove('end'); }
-  save();
   if (tab === 'treino') render();
   tick();
 }
@@ -517,7 +695,11 @@ document.addEventListener('click', (e) => {
     window.scrollTo(0, 0);
     return;
   }
-  if (e.target.id === 'modal') { $('#modal').hidden = true; return; }
+  if (e.target.id === 'modal') {
+    if (askResolve) askResolve(false);
+    else $('#modal').hidden = true;
+    return;
+  }
   const el = e.target.closest('[data-act]');
   if (!el) return;
   const act = el.dataset.act;
@@ -527,16 +709,14 @@ document.addEventListener('click', (e) => {
     case 'walk': {
       const now = new Date();
       const stamp = `${todayStr(now)}T${now.toTimeString().slice(0, 5)}`;
-      state.walks.push(stamp);
-      save();
+      const walk = { id: uid(), at: stamp };
+      ops.addWalk(walk);
       render();
       const wk = weekly(state);
       toast(`+${POINTS.walk} pts · caminhada ${wk.walks}/${wk.walkGoal}`, {
         label: 'Desfazer',
         fn: () => {
-          const i = state.walks.lastIndexOf(stamp);
-          if (i >= 0) state.walks.splice(i, 1);
-          save();
+          ops.delWalk(walk.id);
           render();
         },
       });
@@ -595,12 +775,13 @@ document.addEventListener('click', (e) => {
       window.scrollTo(0, 0);
       break;
     case 'discard':
-      if (confirm('Descartar este treino? O que foi marcado será perdido.')) {
+      ask('Descartar este treino? O que foi marcado será perdido.', 'Descartar').then((ok) => {
+        if (!ok) return;
         state.draft = null;
         save();
         stopTimer();
         render();
-      }
+      });
       break;
     case 'timer-adj':
       adjustTimer(+el.dataset.d);
@@ -621,36 +802,49 @@ document.addEventListener('click', (e) => {
       break;
     }
     case 'del-session':
-      if (confirm('Apagar esta sessão? Os pontos dela também saem.')) {
-        state.sessions = state.sessions.filter((s) => s.id !== el.dataset.id);
-        save();
+      ask('Apagar esta sessão? Os pontos dela também saem.', 'Apagar').then((ok) => {
+        if (!ok) return;
+        ops.delSession(el.dataset.id);
         render();
-      }
+      });
       break;
     case 'add-weight': {
       const kg = num($('#w-kg').value);
       const date = $('#w-date').value || todayStr();
       if (!kg || kg < 30 || kg > 300) { toast('Digite um peso válido em kg.'); break; }
       const isNewWeek = !state.weights.some((w) => weekOf(w.date) === weekOf(date));
-      state.weights = state.weights.filter((w) => w.date !== date);
-      state.weights.push({ date, kg });
-      save();
+      ops.setWeight({ date, kg });
       render();
       toast(isNewWeek ? `+${POINTS.weighIn} pts · pesagem registrada` : 'Pesagem registrada');
       break;
     }
     case 'del-weight':
-      if (confirm('Apagar esta pesagem?')) {
-        state.weights = state.weights.filter((w) => w.date !== el.dataset.date);
-        save();
+      ask('Apagar esta pesagem?', 'Apagar').then((ok) => {
+        if (!ok) return;
+        ops.delWeight(el.dataset.date);
         render();
-      }
+      });
+      break;
+    case 'ask-yes':
+      askResolve?.(true);
+      break;
+    case 'ask-no':
+      askResolve?.(false);
       break;
     case 'export': {
-      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const json = JSON.stringify(exportData(), null, 2);
+      const filename = `treino-backup-${todayStr()}.json`;
+      if (mode === 'db') {
+        window.claude.use('downloads').then((dl) => {
+          if (!dl) { toast('Download não disponível aqui.'); return; }
+          return dl.save({ filename, data: json });
+        }).catch((err) => { if (err?.code && err.code !== 'declined' && err.code !== 'cancelled') toast('Não foi possível baixar.'); });
+        break;
+      }
+      const blob = new Blob([json], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `treino-backup-${todayStr()}.json`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -683,24 +877,41 @@ document.addEventListener('change', (e) => {
     render();
   } else if (el.dataset.act === 'import' && el.files[0]) {
     el.files[0].text().then((txt) => {
+      let data;
       try {
-        const data = JSON.parse(txt);
-        if (!Array.isArray(data.sessions) || !Array.isArray(data.weights)) throw new Error('formato');
-        if (!confirm(`Substituir os dados atuais por este backup (${data.sessions.length} treinos)?`)) return;
-        state = { ...freshState(), ...data, walks: data.walks || [], rest: data.rest || {} };
-        save();
-        render();
-        toast('Backup importado.');
+        data = parseBackup(JSON.parse(txt));
       } catch (err) {
         toast('Arquivo inválido.');
+        return;
       }
+      el.value = '';
+      ask(`Substituir os dados atuais por este backup (${data.sessions.length} treinos, ${data.weights.length} pesagens)?`, 'Substituir').then(async (ok) => {
+        if (!ok) return;
+        toast('Importando…');
+        try {
+          await ops.replaceAll(data);
+          toast('Backup importado.');
+        } catch (err) {
+          toast(`Falhou no meio da importação (${err?.code || 'erro'}). Tente de novo.`);
+        }
+        render();
+      });
     });
   }
 });
 
 // ---------- início ----------
+loadDraft();
+initDb().then((ok) => {
+  if (!ok) {
+    mode = 'local';
+    loadLocal();
+    loadState = 'ready';
+  }
+  render();
+});
 render();
 
-if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+if (!window.SINGLE_FILE && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }

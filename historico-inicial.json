@@ -1,0 +1,705 @@
+{
+  "version": 2,
+  "sessions": [
+    {
+      "id": "seed0",
+      "created": 0,
+      "date": "2026-10-20",
+      "workout": "A",
+      "entries": {
+        "esteira": [
+          {
+            "min": 20,
+            "km": 1.83,
+            "note": "5,5 km/h"
+          }
+        ],
+        "supino": [
+          {
+            "kg": 18,
+            "reps": 12
+          },
+          {
+            "kg": 18,
+            "reps": 12
+          },
+          {
+            "kg": 18,
+            "reps": 12
+          }
+        ],
+        "puxada": [
+          {
+            "kg": 19,
+            "reps": 12
+          },
+          {
+            "kg": 19,
+            "reps": 12
+          },
+          {
+            "kg": 19,
+            "reps": 12
+          }
+        ],
+        "desenv": [
+          {
+            "kg": 11,
+            "reps": 12
+          },
+          {
+            "kg": 11,
+            "reps": 12
+          },
+          {
+            "kg": 11,
+            "reps": 12
+          }
+        ],
+        "rosca": [
+          {
+            "kg": 3,
+            "reps": 12
+          },
+          {
+            "kg": 3,
+            "reps": 12
+          },
+          {
+            "kg": 3,
+            "reps": 12
+          }
+        ],
+        "triceps_polia": [
+          {
+            "kg": 9,
+            "reps": 12
+          },
+          {
+            "kg": 9,
+            "reps": 12
+          },
+          {
+            "kg": 9,
+            "reps": 12
+          }
+        ],
+        "prancha": [
+          {
+            "secs": 20
+          },
+          {
+            "secs": 20
+          },
+          {
+            "secs": 20
+          }
+        ]
+      },
+      "pain": false,
+      "heavy": false,
+      "note": ""
+    },
+    {
+      "id": "seed1",
+      "created": 1,
+      "date": "2026-10-21",
+      "workout": "B",
+      "entries": {
+        "bicicleta": [
+          {
+            "min": 10,
+            "km": null,
+            "note": "24 km/h"
+          }
+        ],
+        "legpress": [
+          {
+            "kg": 24,
+            "reps": 15
+          },
+          {
+            "kg": 24,
+            "reps": 15
+          },
+          {
+            "kg": 24,
+            "reps": 15
+          },
+          {
+            "kg": 24,
+            "reps": 15
+          }
+        ],
+        "extensora": [
+          {
+            "kg": 19,
+            "reps": 15
+          },
+          {
+            "kg": 19,
+            "reps": 15
+          },
+          {
+            "kg": 19,
+            "reps": 15
+          }
+        ],
+        "flexora": [
+          {
+            "kg": 26,
+            "reps": 15
+          },
+          {
+            "kg": 26,
+            "reps": 15
+          },
+          {
+            "kg": 26,
+            "reps": 15
+          }
+        ],
+        "abducao": [
+          {
+            "kg": 26,
+            "reps": 20
+          },
+          {
+            "kg": 26,
+            "reps": 20
+          },
+          {
+            "kg": 26,
+            "reps": 20
+          }
+        ],
+        "panturrilha": [
+          {
+            "reps": 20
+          },
+          {
+            "reps": 20
+          },
+          {
+            "reps": 20
+          }
+        ],
+        "prancha_lateral": [
+          {
+            "secs": 20
+          },
+          {
+            "secs": 20
+          },
+          {
+            "secs": 20
+          }
+        ]
+      },
+      "pain": false,
+      "heavy": false,
+      "note": "Extensora difícil"
+    },
+    {
+      "id": "seed2",
+      "created": 2,
+      "date": "2026-10-22",
+      "workout": "C",
+      "entries": {
+        "eliptico": [
+          {
+            "min": 15,
+            "km": 0.5
+          }
+        ],
+        "remada": [
+          {
+            "kg": 12,
+            "reps": 13
+          },
+          {
+            "kg": 12,
+            "reps": 13
+          },
+          {
+            "kg": 12,
+            "reps": 13
+          }
+        ],
+        "crossover": [
+          {
+            "kg": 4.5,
+            "reps": 12
+          },
+          {
+            "kg": 4.5,
+            "reps": 12
+          },
+          {
+            "kg": 4.5,
+            "reps": 12
+          }
+        ],
+        "elev_lateral": [
+          {
+            "kg": 4,
+            "reps": 12
+          },
+          {
+            "kg": 4,
+            "reps": 12
+          },
+          {
+            "kg": 4,
+            "reps": 12
+          }
+        ],
+        "rosca_martelo": [
+          {
+            "kg": 4,
+            "reps": 12
+          },
+          {
+            "kg": 4,
+            "reps": 12
+          },
+          {
+            "kg": 4,
+            "reps": 12
+          }
+        ],
+        "triceps_testa": [
+          {
+            "kg": 4,
+            "reps": 12
+          },
+          {
+            "kg": 4,
+            "reps": 12
+          },
+          {
+            "kg": 4,
+            "reps": 12
+          }
+        ]
+      },
+      "pain": false,
+      "heavy": false,
+      "note": ""
+    },
+    {
+      "id": "seed3",
+      "created": 3,
+      "date": "2026-10-27",
+      "workout": "A",
+      "entries": {
+        "esteira": [
+          {
+            "min": 20,
+            "km": 1.83,
+            "note": "5,5 km/h"
+          }
+        ],
+        "supino": [
+          {
+            "kg": 18,
+            "reps": 12
+          },
+          {
+            "kg": 18,
+            "reps": 12
+          },
+          {
+            "kg": 18,
+            "reps": 12
+          }
+        ],
+        "puxada": [
+          {
+            "kg": 19,
+            "reps": 12
+          },
+          {
+            "kg": 19,
+            "reps": 12
+          },
+          {
+            "kg": 19,
+            "reps": 12
+          }
+        ],
+        "desenv": [
+          {
+            "kg": 11,
+            "reps": 12
+          },
+          {
+            "kg": 11,
+            "reps": 12
+          },
+          {
+            "kg": 11,
+            "reps": 12
+          }
+        ],
+        "rosca": [
+          {
+            "kg": 4,
+            "reps": 12
+          },
+          {
+            "kg": 4,
+            "reps": 12
+          },
+          {
+            "kg": 4,
+            "reps": 12
+          }
+        ],
+        "triceps_polia": [
+          {
+            "kg": 9,
+            "reps": 12
+          },
+          {
+            "kg": 9,
+            "reps": 12
+          },
+          {
+            "kg": 9,
+            "reps": 12
+          }
+        ],
+        "prancha": [
+          {
+            "secs": 25
+          },
+          {
+            "secs": 25
+          },
+          {
+            "secs": 25
+          }
+        ]
+      },
+      "pain": false,
+      "heavy": false,
+      "note": ""
+    },
+    {
+      "id": "seed4",
+      "created": 4,
+      "date": "2026-10-28",
+      "workout": "B",
+      "entries": {
+        "bicicleta": [
+          {
+            "min": 10,
+            "km": 3.65
+          }
+        ],
+        "legpress": [
+          {
+            "kg": 24,
+            "reps": 15
+          },
+          {
+            "kg": 24,
+            "reps": 15
+          },
+          {
+            "kg": 24,
+            "reps": 15
+          },
+          {
+            "kg": 24,
+            "reps": 15
+          }
+        ],
+        "extensora": [
+          {
+            "kg": 19,
+            "reps": 15
+          },
+          {
+            "kg": 19,
+            "reps": 15
+          },
+          {
+            "kg": 19,
+            "reps": 15
+          }
+        ],
+        "flexora": [
+          {
+            "kg": 26,
+            "reps": 15
+          },
+          {
+            "kg": 26,
+            "reps": 15
+          },
+          {
+            "kg": 26,
+            "reps": 15
+          }
+        ],
+        "abducao": [
+          {
+            "kg": 33,
+            "reps": 20
+          },
+          {
+            "kg": 33,
+            "reps": 20
+          },
+          {
+            "kg": 33,
+            "reps": 20
+          }
+        ],
+        "panturrilha": [
+          {
+            "reps": 30
+          },
+          {
+            "reps": 30
+          },
+          {
+            "reps": 30
+          }
+        ],
+        "prancha_lateral": [
+          {
+            "secs": 20
+          },
+          {
+            "secs": 20
+          },
+          {
+            "secs": 20
+          }
+        ]
+      },
+      "pain": false,
+      "heavy": false,
+      "note": "Extensora difícil"
+    },
+    {
+      "id": "seed5",
+      "created": 5,
+      "date": "2026-11-01",
+      "workout": "C",
+      "entries": {
+        "eliptico": [
+          {
+            "min": 15,
+            "km": 0.56
+          }
+        ],
+        "remada": [
+          {
+            "kg": 12,
+            "reps": 15
+          },
+          {
+            "kg": 12,
+            "reps": 15
+          },
+          {
+            "kg": 19,
+            "reps": 15
+          }
+        ],
+        "crossover": [
+          {
+            "kg": 4.5,
+            "reps": 12
+          },
+          {
+            "kg": 4.5,
+            "reps": 12
+          },
+          {
+            "kg": 4.5,
+            "reps": 12
+          }
+        ],
+        "elev_lateral": [
+          {
+            "kg": 4,
+            "reps": 12
+          },
+          {
+            "kg": 4,
+            "reps": 12
+          },
+          {
+            "kg": 4,
+            "reps": 12
+          }
+        ],
+        "puxada_fechada": [
+          {
+            "kg": 19,
+            "reps": 12
+          },
+          {
+            "kg": 19,
+            "reps": 12
+          },
+          {
+            "kg": 19,
+            "reps": 12
+          }
+        ],
+        "rosca_martelo": [
+          {
+            "kg": 4,
+            "reps": 15
+          },
+          {
+            "kg": 4,
+            "reps": 15
+          },
+          {
+            "kg": 4,
+            "reps": 15
+          }
+        ],
+        "triceps_testa": [
+          {
+            "kg": 5,
+            "reps": 15
+          },
+          {
+            "kg": 5,
+            "reps": 15
+          },
+          {
+            "kg": 5,
+            "reps": 15
+          }
+        ],
+        "core_c": [
+          {
+            "reps": 10
+          },
+          {
+            "reps": 10
+          }
+        ]
+      },
+      "pain": false,
+      "heavy": false,
+      "note": "Dead bug: lombar cansou, parei antes"
+    },
+    {
+      "id": "seed6",
+      "created": 6,
+      "date": "2026-11-02",
+      "workout": "B",
+      "entries": {
+        "bicicleta": [
+          {
+            "min": 11,
+            "km": 3.8
+          }
+        ],
+        "legpress": [
+          {
+            "kg": 24,
+            "reps": 15
+          },
+          {
+            "kg": 24,
+            "reps": 15
+          },
+          {
+            "kg": 24,
+            "reps": 15
+          },
+          {
+            "kg": 24,
+            "reps": 15
+          }
+        ],
+        "extensora": [
+          {
+            "kg": 19,
+            "reps": 12
+          },
+          {
+            "kg": 19,
+            "reps": 12
+          },
+          {
+            "kg": 19,
+            "reps": 14
+          }
+        ],
+        "flexora": [
+          {
+            "kg": 26,
+            "reps": 15
+          },
+          {
+            "kg": 26,
+            "reps": 15
+          },
+          {
+            "kg": 26,
+            "reps": 15
+          }
+        ],
+        "abducao": [
+          {
+            "kg": 33,
+            "reps": 20
+          },
+          {
+            "kg": 33,
+            "reps": 20
+          },
+          {
+            "kg": 33,
+            "reps": 20
+          }
+        ],
+        "panturrilha": [
+          {
+            "reps": 35
+          },
+          {
+            "reps": 35
+          },
+          {
+            "reps": 35
+          }
+        ],
+        "prancha_lateral": [
+          {
+            "secs": 25
+          },
+          {
+            "secs": 25
+          },
+          {
+            "secs": 25
+          }
+        ]
+      },
+      "pain": false,
+      "heavy": false,
+      "note": ""
+    }
+  ],
+  "walks": [],
+  "weights": [
+    {
+      "date": "2026-11-01",
+      "kg": 92
+    }
+  ],
+  "rest": {}
+}
