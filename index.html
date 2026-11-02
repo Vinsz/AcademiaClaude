@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Treino</title>
+  <meta name="description" content="Registro de treinos com pontos, sequência semanal e metas.">
+  <meta name="theme-color" content="#2a78d6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Treino">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="view" class="view"></main>
+
+  <div id="timer" class="timer" hidden>
+    <div class="timer-bar"><div id="timer-fill"></div></div>
+    <div class="timer-row">
+      <span class="timer-label">Descanso</span>
+      <span id="timer-time" class="timer-time">0:00</span>
+      <button class="btn-small" data-act="timer-adj" data-d="-15">−15s</button>
+      <button class="btn-small" data-act="timer-adj" data-d="15">+15s</button>
+      <button class="btn-small" data-act="timer-stop" aria-label="Fechar timer">✕</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+  <div id="modal" class="modal" hidden></div>
+
+  <nav class="tabs" aria-label="Seções">
+    <button data-tab="inicio" class="tab">Início</button>
+    <button data-tab="treino" class="tab">Treino</button>
+    <button data-tab="historico" class="tab">Histórico</button>
+    <button data-tab="peso" class="tab">Peso</button>
+  </nav>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

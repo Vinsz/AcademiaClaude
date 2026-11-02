@@ -1,0 +1,156 @@
+// Definição dos treinos, metas e histórico inicial.
+// Tipos de exercício:
+//   weight  -> séries com kg + reps
+//   reps    -> séries só com reps (peso corporal)
+//   time    -> séries em segundos
+//   cardio  -> minutos + km (uma linha só)
+
+export const WORKOUTS = {
+  A: {
+    name: 'Superior + esteira',
+    place: 'Academia',
+    exercises: [
+      { id: 'esteira', name: 'Esteira', type: 'cardio', target: '20-30 min, ritmo moderado' },
+      { id: 'supino', name: 'Supino reto', type: 'weight', sets: 3, lo: 12, hi: 15, rest: 90, step: 2 },
+      { id: 'puxada', name: 'Puxada frontal', type: 'weight', sets: 3, lo: 12, hi: 15, rest: 90, step: 7 },
+      { id: 'desenv', name: 'Desenvolvimento de ombros (máquina)', type: 'weight', sets: 3, lo: 12, hi: 12, rest: 60, step: 2 },
+      { id: 'rosca', name: 'Rosca direta', type: 'weight', sets: 3, lo: 12, hi: 12, rest: 60, step: 1 },
+      { id: 'triceps_polia', name: 'Tríceps na polia', type: 'weight', sets: 3, lo: 12, hi: 12, rest: 60, step: 2 },
+      { id: 'prancha', name: 'Prancha', type: 'time', sets: 3, lo: 30, hi: 30, rest: 45 },
+    ],
+  },
+  B: {
+    name: 'Inferior adaptado',
+    place: 'Academia',
+    exercises: [
+      { id: 'bicicleta', name: 'Bicicleta reclinada', type: 'cardio', target: '10-15 min' },
+      { id: 'legpress', name: 'Leg press', type: 'weight', sets: 4, lo: 15, hi: 15, rest: 90, step: 9, repsFirst: 20 },
+      { id: 'extensora', name: 'Cadeira extensora', type: 'weight', sets: 3, lo: 15, hi: 15, rest: 60, step: 7 },
+      { id: 'flexora', name: 'Cadeira flexora', type: 'weight', sets: 3, lo: 15, hi: 15, rest: 60, step: 7 },
+      { id: 'abducao', name: 'Abdução de quadril', type: 'weight', sets: 3, lo: 20, hi: 20, rest: 60, step: 7 },
+      { id: 'panturrilha', name: 'Panturrilha em pé', type: 'reps', sets: 3, lo: 20, hi: 35, rest: 45 },
+      { id: 'prancha_lateral', name: 'Prancha lateral (cada lado)', type: 'time', sets: 3, lo: 20, hi: 25, rest: 45 },
+      { id: 'ponte_b', name: 'Ponte de glúteo', type: 'reps', sets: 3, lo: 15, hi: 15, rest: 45, optional: true },
+    ],
+  },
+  C: {
+    name: 'Superior completo + elíptico',
+    place: 'Academia',
+    exercises: [
+      { id: 'eliptico', name: 'Elíptico', type: 'cardio', target: '15 min' },
+      { id: 'remada', name: 'Remada sentada (máquina)', type: 'weight', sets: 3, lo: 12, hi: 15, rest: 90, step: 7 },
+      { id: 'crossover', name: 'Cross over (polia alta)', type: 'weight', sets: 3, lo: 12, hi: 12, rest: 60, step: 1 },
+      { id: 'elev_lateral', name: 'Elevação lateral', type: 'weight', sets: 3, lo: 12, hi: 12, rest: 60, step: 1 },
+      { id: 'puxada_fechada', name: 'Puxada fechada (triângulo)', type: 'weight', sets: 3, lo: 12, hi: 12, rest: 90, step: 7 },
+      { id: 'rosca_martelo', name: 'Rosca martelo', type: 'weight', sets: 3, lo: 12, hi: 15, rest: 60, step: 1 },
+      { id: 'triceps_testa', name: 'Tríceps testa', type: 'weight', sets: 3, lo: 12, hi: 15, rest: 60, step: 1 },
+      { id: 'core_c', name: 'Core (dead bug, bird dog ou Pallof)', type: 'reps', sets: 3, lo: 10, hi: 10, rest: 45 },
+    ],
+  },
+  D: {
+    name: 'Pernas em casa',
+    place: 'Casa',
+    exercises: [
+      { id: 'aquecimento', name: 'Aquecimento', type: 'cardio', target: '5 min' },
+      { id: 'agach_livre', name: 'Agachamento livre (cadeira atrás)', type: 'reps', sets: 3, lo: 15, hi: 15, rest: 60 },
+      { id: 'afundo', name: 'Afundo reverso (cada perna)', type: 'reps', sets: 3, lo: 10, hi: 10, rest: 60 },
+      { id: 'ponte_d', name: 'Ponte de glúteo', type: 'reps', sets: 3, lo: 15, hi: 15, rest: 45 },
+      { id: 'sumo', name: 'Agachamento sumô', type: 'reps', sets: 3, lo: 15, hi: 15, rest: 60 },
+      { id: 'parede', name: 'Cadeira na parede', type: 'time', sets: 3, lo: 30, hi: 45, rest: 60 },
+      { id: 'pant_unilateral', name: 'Panturrilha unilateral (cada)', type: 'reps', sets: 3, lo: 15, hi: 15, rest: 45 },
+      { id: 'bird_dog', name: 'Bird dog (cada lado)', type: 'reps', sets: 3, lo: 8, hi: 8, rest: 45 },
+    ],
+  },
+};
+
+// Metas fixas com barra de progresso.
+// kind 'sets': melhor sessão com carga >= kg, soma de reps limitada a reps por série.
+// kind 'time': melhor série em segundos.
+export const GOALS = [
+  { id: 'g_ext', label: 'Extensora 19 kg 3x15', ex: 'extensora', kind: 'sets', kg: 19, sets: 3, reps: 15 },
+  { id: 'g_leg', label: 'Leg press 24 kg 4x20 (antes de subir pra 33)', ex: 'legpress', kind: 'sets', kg: 24, sets: 4, reps: 20 },
+  { id: 'g_remada', label: 'Remada sentada 19 kg 3x15', ex: 'remada', kind: 'sets', kg: 19, sets: 3, reps: 15 },
+  { id: 'g_prancha', label: 'Prancha de 60 segundos', ex: 'prancha', kind: 'time', secs: 60 },
+];
+
+export const TARGET_WEIGHT = 80;
+
+export const POINTS = {
+  workout: 100,
+  workoutHome: 60,
+  minIncomplete: 40,
+  record: 25,
+  walk: 10,
+  weighIn: 20,
+  perLevel: 500,
+};
+
+export const WEEK_GOAL = 3;
+export const WALK_GOAL_START = 3;
+export const WALK_GOAL_STEP = 2;
+export const WALK_GOAL_MAX = 14;
+export const SHIELD_EVERY = 4;
+
+// ---- Histórico de 20/10/2026 a 02/11/2026 ----
+const w = (kg, ...reps) => reps.map((r) => ({ kg, reps: r }));
+const r = (...reps) => reps.map((x) => ({ reps: x }));
+const t = (...secs) => secs.map((s) => ({ secs: s }));
+const c = (min, km, note) => [{ min, km, note }];
+
+export const SEED_SESSIONS = [
+  {
+    date: '2026-10-20', workout: 'A',
+    entries: {
+      esteira: c(20, 1.83, '5,5 km/h'), supino: w(18, 12, 12, 12), puxada: w(19, 12, 12, 12),
+      desenv: w(11, 12, 12, 12), rosca: w(3, 12, 12, 12), triceps_polia: w(9, 12, 12, 12), prancha: t(20, 20, 20),
+    },
+  },
+  {
+    date: '2026-10-21', workout: 'B',
+    entries: {
+      bicicleta: c(10, null, '24 km/h'), legpress: w(24, 15, 15, 15, 15), extensora: w(19, 15, 15, 15),
+      flexora: w(26, 15, 15, 15), abducao: w(26, 20, 20, 20), panturrilha: r(20, 20, 20), prancha_lateral: t(20, 20, 20),
+    },
+    note: 'Extensora difícil',
+  },
+  {
+    date: '2026-10-22', workout: 'C',
+    entries: {
+      eliptico: c(15, 0.5), remada: w(12, 13, 13, 13), crossover: w(4.5, 12, 12, 12), elev_lateral: w(4, 12, 12, 12),
+      rosca_martelo: w(4, 12, 12, 12), triceps_testa: w(4, 12, 12, 12),
+    },
+  },
+  {
+    date: '2026-10-27', workout: 'A',
+    entries: {
+      esteira: c(20, 1.83, '5,5 km/h'), supino: w(18, 12, 12, 12), puxada: w(19, 12, 12, 12),
+      desenv: w(11, 12, 12, 12), rosca: w(4, 12, 12, 12), triceps_polia: w(9, 12, 12, 12), prancha: t(25, 25, 25),
+    },
+  },
+  {
+    date: '2026-10-28', workout: 'B',
+    entries: {
+      bicicleta: c(10, 3.65), legpress: w(24, 15, 15, 15, 15), extensora: w(19, 15, 15, 15),
+      flexora: w(26, 15, 15, 15), abducao: w(33, 20, 20, 20), panturrilha: r(30, 30, 30), prancha_lateral: t(20, 20, 20),
+    },
+    note: 'Extensora difícil',
+  },
+  {
+    date: '2026-11-01', workout: 'C',
+    entries: {
+      eliptico: c(15, 0.56), remada: [...w(12, 15, 15), ...w(19, 15)], crossover: w(4.5, 12, 12, 12),
+      elev_lateral: w(4, 12, 12, 12), puxada_fechada: w(19, 12, 12, 12), rosca_martelo: w(4, 15, 15, 15),
+      triceps_testa: w(5, 15, 15, 15), core_c: r(10, 10),
+    },
+    note: 'Dead bug: lombar cansou, parei antes',
+  },
+  {
+    date: '2026-11-02', workout: 'B',
+    entries: {
+      bicicleta: c(11, 3.8), legpress: w(24, 15, 15, 15, 15), extensora: w(19, 12, 12, 14),
+      flexora: w(26, 15, 15, 15), abducao: w(33, 20, 20, 20), panturrilha: r(35, 35, 35), prancha_lateral: t(25, 25, 25),
+    },
+  },
+];
+
+export const SEED_WEIGHTS = [{ date: '2026-11-01', kg: 92 }];
