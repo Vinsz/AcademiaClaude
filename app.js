@@ -401,6 +401,7 @@ function editSession(id) {
     pain: !!s.pain, heavy: !!s.heavy, note: s.note || '',
   };
   save();
+  stopTimer();
   tab = 'treino';
   render();
   window.scrollTo(0, 0);
@@ -433,7 +434,7 @@ function exCard(ex, row) {
   const sug = suggestion(ex, last, last?.session.pain);
   const rest = state.rest[ex.id] ?? ex.rest;
   const target = ex.type === 'cardio' ? ex.target
-    : `${ex.sets} × ${ex.lo === ex.hi ? ex.lo : `${ex.lo}-${ex.hi}`}${ex.type === 'time' ? 's' : ''}${rest ? ` · descanso ${rest}s` : ''}`;
+    : `${ex.sets} × ${ex.lo === ex.hi ? ex.lo : `${ex.lo}-${ex.hi}`}${ex.type === 'time' ? 's' : ''}${rest && !editing ? ` · descanso ${rest}s` : ''}`;
 
   const many = row.groups.length > 1;
   const groupHtml = row.groups.map((g, i) => {
@@ -453,7 +454,7 @@ function exCard(ex, row) {
           <h3>${esc(ex.name)}${ex.optional ? ' <span class="tiny">(opcional)</span>' : ''}</h3>
           <p class="tiny">${esc(target)}</p>
         </div>
-        ${ex.type !== 'cardio' && rest ? `<button class="btn-small" data-act="rest" data-ex="${ex.id}">⏱ ${rest}s</button>` : ''}
+        ${ex.type !== 'cardio' && rest && !editing ? `<button class="btn-small" data-act="rest" data-ex="${ex.id}">⏱ ${rest}s</button>` : ''}
       </div>
       <p class="small muted" style="margin-top:6px">Última: ${last ? `${fmtSets(ex, last.sets)} <span class="tiny">(${fmtDate(last.session.date)})</span>` : 'sem registro'}</p>
       ${sug ? `<span class="chip ${sug.kind}">${esc(sug.text)}</span>` : ''}
@@ -818,7 +819,7 @@ document.addEventListener('click', (e) => {
       const y = window.scrollY;
       render();
       window.scrollTo(0, y);
-      if (row.done && exDef(el.dataset.ex).type !== 'cardio') startTimer(el.dataset.ex);
+      if (row.done && !d.editingId && exDef(el.dataset.ex).type !== 'cardio') startTimer(el.dataset.ex);
       break;
     }
     case 'rest':
