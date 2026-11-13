@@ -44,7 +44,7 @@ export const WORKOUTS = {
       { id: 'puxada_fechada', name: 'Puxada fechada (triângulo)', type: 'weight', sets: 3, lo: 12, hi: 12, rest: 90, step: 7 },
       { id: 'rosca_martelo', name: 'Rosca martelo', type: 'weight', sets: 3, lo: 12, hi: 15, rest: 60, step: 1 },
       { id: 'triceps_testa', name: 'Tríceps testa', type: 'weight', sets: 3, lo: 12, hi: 15, rest: 60, step: 1 },
-      { id: 'core_c', name: 'Core (dead bug, bird dog ou Pallof)', type: 'reps', sets: 3, lo: 10, hi: 10, rest: 45 },
+      { id: 'core_c', name: 'Pallof press (polia)', type: 'weight', sets: 3, lo: 10, hi: 12, rest: 45, step: 1 },
     ],
   },
   D: {

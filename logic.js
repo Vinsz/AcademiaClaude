@@ -86,7 +86,7 @@ export function fmtSets(ex, sets) {
     if (g && g.kg === s.kg) g.reps.push(s.reps);
     else groups.push({ kg: s.kg, reps: [s.reps] });
   }
-  return groups.map((g) => `${fmtNum(g.kg)} kg × ${g.reps.join(', ')}`).join(' + ');
+  return groups.map((g) => (g.kg ? `${fmtNum(g.kg)} kg × ${g.reps.join(', ')}` : `${g.reps.join(', ')} reps`)).join(' + ');
 }
 
 // ---------- métrica por exercício (usada em recordes e gráficos) ----------
@@ -96,6 +96,7 @@ export function metric(ex, sets) {
   if (ex.type === 'weight') {
     const maxKg = Math.max(...sets.map((s) => s.kg || 0));
     const reps = sets.filter((s) => (s.kg || 0) === maxKg).reduce((a, s) => a + (s.reps || 0), 0);
+    if (!maxKg) return { key: [0, reps], value: reps, label: `${reps} reps`, detail: `${reps} reps sem carga anotada` };
     return { key: [maxKg, reps], value: maxKg, label: `${fmtNum(maxKg)} kg`, detail: `${reps} reps com ${fmtNum(maxKg)} kg` };
   }
   if (ex.type === 'reps') {
@@ -292,6 +293,7 @@ export function suggestion(ex, last, lastHadPain) {
 
   if (ex.type === 'weight') {
     const maxKg = Math.max(...sets.map((s) => s.kg || 0));
+    if (!maxKg) return { kind: 'keep', text: 'Anote a carga usada para o app acompanhar a evolução' };
     const top = sets.filter((s) => (s.kg || 0) === maxKg);
     if (top.length < ex.sets) return { kind: 'keep', text: `Manter ${fmtNum(maxKg)} kg e completar as ${ex.sets} séries` };
     const minReps = Math.min(...top.slice(0, ex.sets).map((s) => s.reps || 0));

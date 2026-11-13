@@ -228,6 +228,26 @@ p { margin: 0; }
 
 .ex-done { border-left: 4px solid var(--good); }
 
+.groups { margin-top: 10px; display: grid; gap: 8px; }
+.grp { display: grid; gap: 8px; align-items: center; }
+.grp.three { grid-template-columns: 1fr 1fr 1.2fr 32px; }
+.grp.two { grid-template-columns: 1fr 1fr 32px; }
+.grp .field input { padding-right: 48px; }
+.del {
+  width: 32px; height: 32px; border: 0; border-radius: 8px;
+  background: var(--surface-2); color: var(--text-3); font-size: 14px;
+}
+.done-btn {
+  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--text-2);
+  border-radius: 10px;
+  padding: 0 14px;
+  min-height: 44px;
+  font-weight: 600;
+}
+.done-btn.on { background: var(--good); border-color: var(--good); color: #fff; }
+
 textarea, .input {
   width: 100%;
   border: 1px solid var(--line);

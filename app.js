@@ -77,7 +77,7 @@ function loadLocal() {
 function loadDraft() {
   try {
     const d = JSON.parse(lsGet(DRAFT_KEY) || 'null');
-    if (d) state.draft = d;
+    if (d) state.draft = migrateDraft(d);
   } catch (e) { /* sem rascunho */ }
 }
 
@@ -92,8 +92,8 @@ async function persist(fn) {
 
 // Cada operação atualiza o estado na hora e depois grava.
 const ops = {
-  addSession(s) {
-    state.sessions = [...state.sessions, s];
+  putSession(s) {
+    state.sessions = [...state.sessions.filter((x) => x.id !== s.id), s];
     return persist(() => db.doc(`sessions/${s.id}`).set(s));
   },
   delSession(id) {
@@ -346,14 +346,39 @@ function viewPick() {
     <p class="tiny" style="margin-top:12px">O D substitui o B quando você não vai à academia, ou entra como extra 48h depois do B.</p>`;
 }
 
+// Linhas do rascunho: cada exercício tem { done, groups: [{ sets, reps, kg, secs }] }
+// (cardio: groups = [{ min, km }]). Um grupo = "3 séries × 15 reps com 12 kg".
+function groupSets(ex, sets) {
+  if (ex.type === 'cardio') return [{ min: sets[0]?.min ?? '', km: sets[0]?.km ?? '' }];
+  const groups = [];
+  for (const s of sets) {
+    const g = groups[groups.length - 1];
+    const same = g && (g.kg ?? '') === (s.kg ?? '') && (g.reps ?? '') === (s.reps ?? '') && (g.secs ?? '') === (s.secs ?? '');
+    if (same) g.sets++;
+    else groups.push({ sets: 1, kg: s.kg ?? '', reps: s.reps ?? '', secs: s.secs ?? '' });
+  }
+  return groups;
+}
+
 function defaultRows(ex) {
   const last = lastEntry(state.sessions, ex.id);
-  if (ex.type === 'cardio') {
-    const s = last?.sets[0];
-    return [{ min: s?.min ?? '', km: '', done: false }];
+  if (ex.type === 'cardio') return { done: false, groups: [{ min: last?.sets[0]?.min ?? '', km: '' }] };
+  if (last) return { done: false, groups: groupSets(ex, last.sets) };
+  return { done: false, groups: [{ sets: ex.sets, kg: '', reps: ex.type === 'time' ? '' : ex.lo, secs: ex.type === 'time' ? ex.lo : '' }] };
+}
+
+// Rascunhos antigos (uma linha por série) viram grupos.
+function migrateDraft(d) {
+  if (!d || !d.rows) return d;
+  for (const [exId, rows] of Object.entries(d.rows)) {
+    if (!Array.isArray(rows)) continue;
+    const ex = exDef(exId);
+    if (!ex) { delete d.rows[exId]; continue; }
+    const done = rows.some((r) => r.done);
+    const used = done ? rows.filter((r) => r.done) : rows;
+    d.rows[exId] = { done, groups: groupSets(ex, used) };
   }
-  if (last) return last.sets.map((s) => ({ kg: s.kg ?? '', reps: s.reps ?? '', secs: s.secs ?? '', done: false }));
-  return Array.from({ length: ex.sets }, () => ({ kg: '', reps: ex.type === 'time' ? '' : ex.lo, secs: ex.type === 'time' ? ex.lo : '', done: false }));
+  return d;
 }
 
 function startDraft(w) {
@@ -363,47 +388,66 @@ function startDraft(w) {
   save();
 }
 
+function editSession(id) {
+  const s = state.sessions.find((x) => x.id === id);
+  if (!s) return;
+  const rows = {};
+  for (const ex of WORKOUTS[s.workout].exercises) {
+    const sets = s.entries[ex.id];
+    rows[ex.id] = sets && sets.length ? { done: true, groups: groupSets(ex, sets) } : defaultRows(ex);
+  }
+  state.draft = {
+    editingId: s.id, created: s.created, workout: s.workout, date: s.date, rows,
+    pain: !!s.pain, heavy: !!s.heavy, note: s.note || '',
+  };
+  save();
+  tab = 'treino';
+  render();
+  window.scrollTo(0, 0);
+}
+
 // ---------- Treino: sessão em andamento ----------
 function viewDraft() {
   const d = state.draft;
   const def = WORKOUTS[d.workout];
   return `
     <div class="row between">
-      <h1 style="margin-bottom:4px">Treino ${d.workout}</h1>
+      <h1 style="margin-bottom:4px">${d.editingId ? 'Editando treino' : 'Treino'} ${d.workout}</h1>
       <input type="date" class="input" style="width:auto" value="${d.date}" data-draft="date" aria-label="Data do treino">
     </div>
-    <p class="muted small" style="margin-bottom:14px">${esc(def.name)} · toque em ✓ ao terminar cada série</p>
-    ${def.exercises.map((ex) => exCard(ex, d.rows[ex.id] || [])).join('')}
+    <p class="muted small" style="margin-bottom:14px">${esc(def.name)} · confira os números e toque em ✓ quando terminar o exercício</p>
+    ${def.exercises.map((ex) => exCard(ex, d.rows[ex.id] || defaultRows(ex))).join('')}
     <div class="card">
       <label class="toggle"><input type="checkbox" data-draft="pain" ${d.pain ? 'checked' : ''}> Dor na coluna</label>
       <label class="toggle"><input type="checkbox" data-draft="heavy" ${d.heavy ? 'checked' : ''}> Dia pesado</label>
       <textarea rows="2" placeholder="Observações" data-draft="note">${esc(d.note)}</textarea>
       <p class="tiny" style="margin-top:6px">Treino com dor vale os mesmos pontos. Na próxima vez, o app sugere manter a carga.</p>
     </div>
-    <button class="btn" data-act="finish">Concluir treino</button>
-    <button class="btn secondary" data-act="discard" style="margin-top:10px">Descartar</button>`;
+    <button class="btn" data-act="finish">${d.editingId ? 'Salvar alterações' : 'Concluir treino'}</button>
+    <button class="btn secondary" data-act="discard" style="margin-top:10px">${d.editingId ? 'Cancelar edição' : 'Descartar'}</button>`;
 }
 
-function exCard(ex, rows) {
-  const last = lastEntry(state.sessions, ex.id);
+function exCard(ex, row) {
+  const editing = state.draft?.editingId;
+  const last = lastEntry(state.sessions.filter((s) => s.id !== editing), ex.id);
   const sug = suggestion(ex, last, last?.session.pain);
-  const doneCount = rows.filter((r) => r.done).length;
   const rest = state.rest[ex.id] ?? ex.rest;
   const target = ex.type === 'cardio' ? ex.target
     : `${ex.sets} × ${ex.lo === ex.hi ? ex.lo : `${ex.lo}-${ex.hi}`}${ex.type === 'time' ? 's' : ''}${rest ? ` · descanso ${rest}s` : ''}`;
 
-  const rowHtml = rows.map((r, i) => {
+  const many = row.groups.length > 1;
+  const groupHtml = row.groups.map((g, i) => {
     const attrs = `data-ex="${ex.id}" data-i="${i}"`;
-    const check = `<button class="check ${r.done ? 'on' : ''}" data-act="check" ${attrs} aria-label="Série ${i + 1} feita">✓</button>`;
-    const field = (k, unit, mode = 'decimal') => `<label class="field"><input inputmode="${mode}" ${attrs} data-k="${k}" value="${esc(r[k])}" aria-label="${unit}"><span>${unit}</span></label>`;
-    if (ex.type === 'weight') return `<div class="set ${r.done ? 'done' : ''}"><span class="n">${i + 1}</span>${field('kg', 'kg')}${field('reps', 'reps', 'numeric')}${check}</div>`;
-    if (ex.type === 'cardio') return `<div class="set ${r.done ? 'done' : ''}"><span class="n"></span>${field('min', 'min')}${field('km', 'km')}${check}</div>`;
-    if (ex.type === 'time') return `<div class="set one ${r.done ? 'done' : ''}"><span class="n">${i + 1}</span>${field('secs', 's', 'numeric')}${check}</div>`;
-    return `<div class="set one ${r.done ? 'done' : ''}"><span class="n">${i + 1}</span>${field('reps', 'reps', 'numeric')}${check}</div>`;
+    const field = (k, unit, mode = 'decimal') => `<label class="field"><input inputmode="${mode}" ${attrs} data-k="${k}" value="${esc(g[k])}" aria-label="${unit}"><span>${unit}</span></label>`;
+    const del = many ? `<button class="del" data-act="del-group" ${attrs} aria-label="Remover linha">✕</button>` : '<span></span>';
+    if (ex.type === 'cardio') return `<div class="grp two">${field('min', 'min')}${field('km', 'km')}</div>`;
+    if (ex.type === 'weight') return `<div class="grp three">${field('sets', 'séries', 'numeric')}${field('reps', 'reps', 'numeric')}${field('kg', 'kg')}${del}</div>`;
+    if (ex.type === 'time') return `<div class="grp two">${field('sets', 'séries', 'numeric')}${field('secs', 'seg', 'numeric')}${del}</div>`;
+    return `<div class="grp two">${field('sets', 'séries', 'numeric')}${field('reps', 'reps', 'numeric')}${del}</div>`;
   }).join('');
 
   return `
-    <div class="card ${doneCount ? 'ex-done' : ''}">
+    <div class="card ${row.done ? 'ex-done' : ''}">
       <div class="ex-head">
         <div class="grow">
           <h3>${esc(ex.name)}${ex.optional ? ' <span class="tiny">(opcional)</span>' : ''}</h3>
@@ -413,34 +457,59 @@ function exCard(ex, rows) {
       </div>
       <p class="small muted" style="margin-top:6px">Última: ${last ? `${fmtSets(ex, last.sets)} <span class="tiny">(${fmtDate(last.session.date)})</span>` : 'sem registro'}</p>
       ${sug ? `<span class="chip ${sug.kind}">${esc(sug.text)}</span>` : ''}
-      <div class="sets">${rowHtml}</div>
-      ${ex.type !== 'cardio' ? `
-      <div class="row">
-        <button class="link" data-act="add-set" data-ex="${ex.id}">+ série</button>
-        ${rows.length > 1 ? `<button class="link" data-act="del-set" data-ex="${ex.id}">− série</button>` : ''}
-      </div>` : ''}
+      <div class="groups">${groupHtml}</div>
+      <div class="row between" style="margin-top:4px">
+        ${ex.type !== 'cardio' ? `<button class="link" data-act="add-group" data-ex="${ex.id}">+ outra carga</button>` : '<span></span>'}
+        <button class="done-btn ${row.done ? 'on' : ''}" data-act="check" data-ex="${ex.id}" aria-pressed="${row.done}">${row.done ? '✓ Feito' : '✓ Marcar feito'}</button>
+      </div>
     </div>`;
+}
+
+function buildEntries(d) {
+  const entries = {};
+  for (const ex of WORKOUTS[d.workout].exercises) {
+    const row = d.rows[ex.id];
+    if (!row || !row.done) continue;
+    const sets = [];
+    for (const g of row.groups) {
+      if (ex.type === 'cardio') { sets.push({ min: num(g.min), km: num(g.km) }); continue; }
+      const n = Math.max(0, Math.min(20, Math.round(num(g.sets) ?? 0)));
+      for (let i = 0; i < n; i++) {
+        if (ex.type === 'weight') sets.push({ kg: num(g.kg) ?? 0, reps: num(g.reps) ?? 0 });
+        else if (ex.type === 'time') sets.push({ secs: num(g.secs) ?? 0 });
+        else sets.push({ reps: num(g.reps) ?? 0 });
+      }
+    }
+    if (sets.length) entries[ex.id] = sets;
+  }
+  return entries;
 }
 
 function finishDraft() {
   const d = state.draft;
-  const entries = {};
-  for (const ex of WORKOUTS[d.workout].exercises) {
-    const rows = (d.rows[ex.id] || []).filter((r) => r.done);
-    if (!rows.length) continue;
-    if (ex.type === 'cardio') entries[ex.id] = rows.map((r) => ({ min: num(r.min), km: num(r.km) }));
-    else if (ex.type === 'weight') entries[ex.id] = rows.map((r) => ({ kg: num(r.kg) ?? 0, reps: num(r.reps) ?? 0 }));
-    else if (ex.type === 'time') entries[ex.id] = rows.map((r) => ({ secs: num(r.secs) ?? 0 }));
-    else entries[ex.id] = rows.map((r) => ({ reps: num(r.reps) ?? 0 }));
-  }
+  const entries = buildEntries(d);
   if (!Object.keys(entries).length) {
-    toast('Marque ✓ em pelo menos uma série.');
+    toast('Marque ✓ em pelo menos um exercício.');
     return;
   }
+
+  if (d.editingId) {
+    const session = { id: d.editingId, created: d.created ?? Date.now(), date: d.date, workout: d.workout, entries, pain: d.pain, heavy: d.heavy, note: d.note.trim() };
+    ops.putSession(session);
+    state.draft = null;
+    save();
+    stopTimer();
+    tab = 'historico';
+    histView = 'sessoes';
+    render();
+    toast('Treino atualizado.');
+    return;
+  }
+
   const before = totals(state);
   const beforeWeek = weekly(state);
   const session = { id: uid(), created: Date.now(), date: d.date, workout: d.workout, entries, pain: d.pain, heavy: d.heavy, note: d.note.trim() };
-  ops.addSession(session);
+  ops.putSession(session);
   state.draft = null;
   save();
   stopTimer();
@@ -498,7 +567,10 @@ function viewHistory() {
           }).join('')}
         </tbody></table>
         ${s.note ? `<p class="small muted" style="margin-top:8px">${esc(s.note)}</p>` : ''}
-        <button class="link" data-act="del-session" data-id="${s.id}" style="color:var(--care);margin-top:6px">Apagar sessão</button>
+        <div class="row between" style="margin-top:6px">
+          <button class="link" data-act="edit-session" data-id="${s.id}">Editar</button>
+          <button class="link" data-act="del-session" data-id="${s.id}" style="color:var(--care)">Apagar sessão</button>
+        </div>
       </details>`;
   }).join('') : '<p class="muted">Nenhum treino ainda.</p>');
 }
@@ -740,7 +812,7 @@ document.addEventListener('click', (e) => {
       window.scrollTo(0, 0);
       break;
     case 'check': {
-      const row = d.rows[el.dataset.ex][+el.dataset.i];
+      const row = d.rows[el.dataset.ex];
       row.done = !row.done;
       save();
       const y = window.scrollY;
@@ -752,22 +824,29 @@ document.addEventListener('click', (e) => {
     case 'rest':
       startTimer(el.dataset.ex);
       break;
-    case 'add-set': {
-      const rows = d.rows[el.dataset.ex];
-      const prev = rows.at(-1) || {};
-      rows.push({ kg: prev.kg ?? '', reps: prev.reps ?? '', secs: prev.secs ?? '', done: false });
+    case 'add-group': {
+      const groups = d.rows[el.dataset.ex].groups;
+      const prev = groups.at(-1) || {};
+      groups.push({ sets: 1, reps: prev.reps ?? '', kg: prev.kg ?? '', secs: prev.secs ?? '' });
+      if (num(prev.sets) > 1) prev.sets = num(prev.sets) - 1;
       save();
       const y = window.scrollY;
       render();
       window.scrollTo(0, y);
       break;
     }
-    case 'del-set': {
-      d.rows[el.dataset.ex].pop();
+    case 'del-group': {
+      d.rows[el.dataset.ex].groups.splice(+el.dataset.i, 1);
       save();
       const y = window.scrollY;
       render();
       window.scrollTo(0, y);
+      break;
+    }
+    case 'edit-session': {
+      const go = () => editSession(el.dataset.id);
+      if (state.draft) ask('Há um treino em andamento. Descartar ele para editar esta sessão?', 'Descartar e editar').then((ok) => ok && go());
+      else go();
       break;
     }
     case 'finish':
@@ -775,7 +854,7 @@ document.addEventListener('click', (e) => {
       window.scrollTo(0, 0);
       break;
     case 'discard':
-      ask('Descartar este treino? O que foi marcado será perdido.', 'Descartar').then((ok) => {
+      ask(d.editingId ? 'Cancelar a edição? A sessão salva fica como estava.' : 'Descartar este treino? O que foi marcado será perdido.', d.editingId ? 'Cancelar edição' : 'Descartar').then((ok) => {
         if (!ok) return;
         state.draft = null;
         save();
@@ -858,7 +937,7 @@ document.addEventListener('click', (e) => {
 document.addEventListener('input', (e) => {
   const el = e.target;
   if (el.dataset.k && state.draft) {
-    state.draft.rows[el.dataset.ex][+el.dataset.i][el.dataset.k] = el.value;
+    state.draft.rows[el.dataset.ex].groups[+el.dataset.i][el.dataset.k] = el.value;
     save();
   } else if (el.dataset.draft === 'note' && state.draft) {
     state.draft.note = el.value;
