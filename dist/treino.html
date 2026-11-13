@@ -1664,8 +1664,12 @@ document.addEventListener('click', (e) => {
     }
     case 'edit-session': {
       const go = () => editSession(el.dataset.id);
-      if (state.draft) ask('Há um treino em andamento. Descartar ele para editar esta sessão?', 'Descartar e editar').then((ok) => ok && go());
-      else go();
+      const dr = state.draft;
+      const marked = dr ? Object.values(dr.rows || {}).filter((r) => r && r.done).length : 0;
+      if (marked) {
+        const what = dr.editingId ? `a edição do treino ${dr.workout} de ${fmtDate(dr.date)}` : `o treino ${dr.workout} de ${fmtDate(dr.date)}`;
+        ask(`Você tem ${what} aberto, com ${marked} exercício${marked > 1 ? 's' : ''} marcado${marked > 1 ? 's' : ''}. Descartar para editar esta sessão?`, 'Descartar e editar').then((ok) => ok && go());
+      } else go();
       break;
     }
     case 'finish':
