@@ -1279,6 +1279,7 @@ function exCard(ex, row) {
       <p class="small muted" style="margin-top:6px">Última: ${last ? `${fmtSets(ex, last.sets)} <span class="tiny">(${fmtDate(last.session.date)})</span>` : 'sem registro'}</p>
       ${sug ? `<span class="chip ${sug.kind}">${esc(sug.text)}</span>` : ''}
       <div class="groups">${groupHtml}</div>
+      ${many && ex.type !== 'cardio' ? `<p class="tiny" style="margin-top:6px">Total: <b>${row.groups.reduce((t, g) => t + (num(g.sets) || 0), 0)} séries</b> (cada linha = séries feitas com aquela carga)</p>` : ''}
       <div class="row between" style="margin-top:4px">
         ${ex.type !== 'cardio' ? `<button class="link" data-act="add-group" data-ex="${ex.id}">+ outra carga</button>` : '<span></span>'}
         <button class="done-btn ${row.done ? 'on' : ''}" data-act="check" data-ex="${ex.id}" aria-pressed="${row.done}">${row.done ? '✓ Feito' : '✓ Marcar feito'}</button>
@@ -1774,7 +1775,12 @@ document.addEventListener('click', (e) => {
 document.addEventListener('input', (e) => {
   const el = e.target;
   if (el.dataset.k && state.draft) {
-    state.draft.rows[el.dataset.ex].groups[+el.dataset.i][el.dataset.k] = el.value;
+    const row = state.draft.rows[el.dataset.ex];
+    row.groups[+el.dataset.i][el.dataset.k] = el.value;
+    if (el.dataset.k === 'sets') {
+      const tot = el.closest('.card')?.querySelector('.groups + .tiny b');
+      if (tot) tot.textContent = `${row.groups.reduce((t, g) => t + (num(g.sets) || 0), 0)} séries`;
+    }
     save();
   } else if (el.dataset.draft === 'note' && state.draft) {
     state.draft.note = el.value;
