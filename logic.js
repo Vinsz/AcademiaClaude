@@ -340,3 +340,41 @@ export function exerciseSeries(sessions, exId) {
   }
   return out;
 }
+
+// Estatísticas por sessão de um exercício, para os gráficos de evolução.
+//   weight: carga média (ponderada pelas reps), carga máxima, volume (kg × reps),
+//           força estimada (1RM pela fórmula de Epley, melhor série)
+//   reps/time: melhor série e total
+//   cardio: distância, minutos e velocidade média
+export function exerciseStats(sessions, exId) {
+  const ex = exDef(exId);
+  const out = [];
+  for (const s of sortSessions(sessions)) {
+    const sets = s.entries[exId];
+    if (!sets || !sets.length) continue;
+    const row = { date: s.date, detail: fmtSets(ex, sets), pain: !!s.pain };
+    if (ex.type === 'weight') {
+      const reps = sets.reduce((a, x) => a + (x.reps || 0), 0);
+      const vol = sets.reduce((a, x) => a + (x.kg || 0) * (x.reps || 0), 0);
+      row.maxKg = Math.max(...sets.map((x) => x.kg || 0));
+      if (!row.maxKg) { row.noLoad = true; row.reps = reps; out.push(row); continue; }
+      row.avgKg = reps ? vol / reps : 0;
+      row.volume = vol;
+      row.reps = reps;
+      row.e1rm = Math.max(...sets.map((x) => (x.kg || 0) * (1 + (x.reps || 0) / 30)));
+    } else if (ex.type === 'reps') {
+      row.best = Math.max(...sets.map((x) => x.reps || 0));
+      row.total = sets.reduce((a, x) => a + (x.reps || 0), 0);
+    } else if (ex.type === 'time') {
+      row.best = Math.max(...sets.map((x) => x.secs || 0));
+      row.total = sets.reduce((a, x) => a + (x.secs || 0), 0);
+    } else {
+      const c = sets[0];
+      row.km = c.km ?? null;
+      row.min = c.min ?? null;
+      row.speed = c.km && c.min ? c.km / (c.min / 60) : null;
+    }
+    out.push(row);
+  }
+  return out;
+}
