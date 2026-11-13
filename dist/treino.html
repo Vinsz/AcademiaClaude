@@ -1665,6 +1665,12 @@ document.addEventListener('click', (e) => {
     case 'edit-session': {
       const go = () => editSession(el.dataset.id);
       const dr = state.draft;
+      if (dr && dr.editingId === el.dataset.id) {
+        tab = 'treino';
+        render();
+        window.scrollTo(0, 0);
+        break;
+      }
       const marked = dr ? Object.values(dr.rows || {}).filter((r) => r && r.done).length : 0;
       if (marked) {
         const what = dr.editingId ? `a edição do treino ${dr.workout} de ${fmtDate(dr.date)}` : `o treino ${dr.workout} de ${fmtDate(dr.date)}`;
