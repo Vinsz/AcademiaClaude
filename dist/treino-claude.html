@@ -1128,6 +1128,7 @@ function viewHome() {
       </div>
       ${wi.next ? bar(wi.fromKg - wi.avg, wi.fromKg - wi.next.kg) : bar(1, 1)}
       <p class="tiny">${wi.next ? `${fmtNum(Math.max(0, wi.fromKg - wi.avg))} / ${fmtNum(wi.fromKg - wi.next.kg)} kg · ` : ''}média das últimas 3 pesagens</p>
+      <button class="link" data-act="go-weight" style="margin-top:4px">+ Registrar peso</button>
     </div>` : ''}
 
     <div class="card">
@@ -1728,6 +1729,12 @@ document.addEventListener('click', (e) => {
         ops.delWeight(el.dataset.date);
         render();
       });
+      break;
+    case 'go-weight':
+      tab = 'peso';
+      render();
+      window.scrollTo(0, 0);
+      setTimeout(() => $('#w-kg')?.focus(), 50);
       break;
     case 'ask-yes':
       askResolve?.(true);
