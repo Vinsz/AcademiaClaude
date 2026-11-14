@@ -1,4 +1,4 @@
-import { WORKOUTS, POINTS } from './data.js';
+import { WORKOUTS, POINTS, WEEK_GOAL } from './data.js';
 import {
   todayStr, weekOf, fmtDate, fmtNum, exDef, sortSessions, lastEntry, fmtSets,
   computeRecords, sessionBasePoints, totals, weekly, weightInfo, goalsProgress,
@@ -231,7 +231,9 @@ const num = (v) => {
 };
 
 let tab = 'inicio';
-let histView = 'sessoes';
+let histView = 'calendario';
+let calMonth = todayStr().slice(0, 7);
+let calSel = null;
 let chartEx = 'extensora';
 
 // ---------- render principal ----------
@@ -546,10 +548,12 @@ function finishDraft() {
 function viewHistory() {
   const seg = `
     <div class="seg">
+      <button data-act="hist" data-v="calendario" class="${histView === 'calendario' ? 'on' : ''}">Calendário</button>
       <button data-act="hist" data-v="sessoes" class="${histView === 'sessoes' ? 'on' : ''}">Sessões</button>
       <button data-act="hist" data-v="evolucao" class="${histView === 'evolucao' ? 'on' : ''}">Evolução</button>
       <button data-act="hist" data-v="dados" class="${histView === 'dados' ? 'on' : ''}">Dados</button>
     </div>`;
+  if (histView === 'calendario') return seg + viewCalendar();
   if (histView === 'evolucao') return seg + viewEvolution();
   if (histView === 'dados') return seg + viewData();
 
@@ -582,6 +586,87 @@ function viewHistory() {
         </div>
       </details>`;
   }).join('') : '<p class="muted">Nenhum treino ainda.</p>');
+}
+
+const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+function viewCalendar() {
+  const [yy, mm] = calMonth.split('-').map(Number);
+  const first = `${calMonth}-01`;
+  const daysIn = new Date(yy, mm, 0).getDate();
+  const last = `${calMonth}-${String(daysIn).padStart(2, '0')}`;
+  const today = todayStr();
+  const byDate = new Map();
+  for (const s of sortSessions(state.sessions)) {
+    if (!byDate.has(s.date)) byDate.set(s.date, []);
+    byDate.get(s.date).push(s);
+  }
+  const walksByDate = new Map();
+  for (const w of state.walks) walksByDate.set(w.slice(0, 10), (walksByDate.get(w.slice(0, 10)) || 0) + 1);
+
+  const shift = (iso, n) => { const [a, b, c] = iso.split('-').map(Number); return todayStr(new Date(a, b - 1, c + n)); };
+  let rows = '';
+  for (let wk = weekOf(first); wk <= last; wk = shift(wk, 7)) {
+    let cells = '';
+    let count = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = shift(wk, i);
+      count += (byDate.get(d) || []).length;
+      if (d.slice(0, 7) !== calMonth) { cells += '<div class="cal-cell out"></div>'; continue; }
+      const ss = byDate.get(d) || [];
+      const walks = walksByDate.get(d) || 0;
+      const cls = ['cal-cell', ss.length ? 'has' : '', d === today ? 'today' : '', d === calSel ? 'sel' : '', d > today ? 'future' : ''].join(' ');
+      cells += `<button class="${cls}" data-act="cal-day" data-date="${d}" aria-label="${Number(d.slice(8))} de ${MONTHS[mm - 1]}${ss.length ? `: treino ${ss.map((x) => x.workout).join(' e ')}` : ''}">
+        <span class="cal-num">${Number(d.slice(8))}</span>
+        <span class="cal-marks">${ss.map((x) => `<b class="cal-w ${x.workout === 'D' ? 'home' : ''}">${x.workout}</b>`).join('')}</span>
+        ${walks ? `<span class="cal-walk" title="${walks} caminhada(s)"></span>` : ''}
+      </button>`;
+    }
+    const wkDone = count >= WEEK_GOAL;
+    const wkPast = shift(wk, 6) < today;
+    rows += `${cells}<div class="cal-wk ${wkDone ? 'ok' : ''}">${wkDone ? '✓' : wkPast || weekOf(today) === wk ? `${count}/${WEEK_GOAL}` : ''}</div>`;
+  }
+
+  const monthSessions = state.sessions.filter((s) => s.date >= first && s.date <= last);
+  const perW = ['A', 'B', 'C', 'D'].map((k) => [k, monthSessions.filter((s) => s.workout === k).length]).filter(([, n]) => n);
+  const monthWalks = state.walks.filter((w) => w.slice(0, 10) >= first && w.slice(0, 10) <= last).length;
+
+  let detail = '';
+  if (calSel) {
+    const ss = byDate.get(calSel) || [];
+    const recs = computeRecords(state.sessions);
+    detail = `<div class="card">
+      <h3>${Number(calSel.slice(8))} de ${MONTHS[Number(calSel.slice(5, 7)) - 1]}</h3>
+      ${ss.length ? ss.map((s) => {
+        const b = sessionBasePoints(s);
+        const r = (recs.get(s.id) || []).length;
+        return `<div class="list-item row between"><div><b>Treino ${s.workout}</b> · ${esc(WORKOUTS[s.workout].name)}<div class="tiny">${b.complete ? 'Completo' : `${b.done}/${b.total} exercícios`}${r ? ` · ${r} recorde${r > 1 ? 's' : ''}` : ''}${s.pain ? ' · dor na coluna' : ''}</div>${s.note ? `<div class="tiny">${esc(s.note)}</div>` : ''}</div><b>+${b.points + r * POINTS.record}</b></div>`;
+      }).join('') : '<p class="muted small" style="margin-top:6px">Sem treino neste dia.</p>'}
+      ${walksByDate.get(calSel) ? `<p class="small muted" style="margin-top:8px">${walksByDate.get(calSel)} caminhada(s)</p>` : ''}
+    </div>`;
+  }
+
+  return `
+    <div class="card">
+      <div class="row between">
+        <button class="btn-small" data-act="cal-month" data-d="-1" aria-label="Mês anterior">‹</button>
+        <h3 style="text-transform:capitalize">${MONTHS[mm - 1]} ${yy}</h3>
+        <button class="btn-small" data-act="cal-month" data-d="1" aria-label="Próximo mês">›</button>
+      </div>
+      <div class="cal">
+        ${['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((d) => `<div class="cal-h">${d}</div>`).join('')}<div class="cal-h">sem.</div>
+        ${rows}
+      </div>
+      <div class="cal-legend tiny">
+        <span><b class="cal-w">A</b> treino na academia</span>
+        <span><b class="cal-w home">D</b> treino em casa</span>
+        <span><i class="cal-walk"></i> caminhada</span>
+      </div>
+    </div>
+    ${detail}
+    <div class="card small">
+      <b>${monthSessions.length}</b> treino${monthSessions.length === 1 ? '' : 's'} no mês${perW.length ? ` · ${perW.map(([k, n]) => `${k}: ${n}`).join(' · ')}` : ''}${monthWalks ? ` · ${monthWalks} caminhada${monthWalks > 1 ? 's' : ''}` : ''}
+    </div>`;
 }
 
 function viewEvolution() {
@@ -1045,6 +1130,18 @@ document.addEventListener('click', (e) => {
       break;
     case 'hist':
       histView = el.dataset.v;
+      render();
+      break;
+    case 'cal-month': {
+      const [yy, mm] = calMonth.split('-').map(Number);
+      const d2 = new Date(yy, mm - 1 + Number(el.dataset.d), 1);
+      calMonth = todayStr(d2).slice(0, 7);
+      calSel = null;
+      render();
+      break;
+    }
+    case 'cal-day':
+      calSel = calSel === el.dataset.date ? null : el.dataset.date;
       render();
       break;
     case 'tip': {
