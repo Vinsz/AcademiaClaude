@@ -250,7 +250,6 @@ function viewHome() {
   const wk = weekly(state);
   const wi = weightInfo(state.weights);
   const goals = goalsProgress(state.sessions);
-  const next = state.draft ? state.draft.workout : nextWorkout(state.sessions);
   const last = sortSessions(state.sessions).at(-1);
 
   const dots = Array.from({ length: Math.max(wk.weekGoal, wk.sessions) }, (_, i) => `<span class="dot ${i < wk.sessions ? 'on' : ''}"></span>`).join('');
@@ -303,7 +302,7 @@ function viewHome() {
       </div>
     </div>
 
-    <button class="btn" data-act="go-train" style="margin-bottom:12px">${state.draft ? 'Continuar' : 'Começar'} treino ${next}</button>
+    <button class="btn" data-act="go-train" style="margin-bottom:12px">${state.draft ? `${state.draft.editingId ? 'Continuar edição do' : 'Continuar'} treino ${state.draft.workout}` : 'Começar treino'}</button>
 
     ${wi ? `
     <div class="card">
@@ -333,16 +332,23 @@ function viewHome() {
 
 // ---------- Treino: escolha ----------
 function viewPick() {
-  const sug = nextWorkout(state.sessions);
+  const thisWeek = weekOf(todayStr());
+  const sorted = sortSessions(state.sessions);
   return `
     <h1>Qual treino hoje?</h1>
     <div class="pick">
-      ${Object.entries(WORKOUTS).map(([k, w]) => `
-        <button data-act="start" data-w="${k}" class="${k === sug ? 'suggested' : ''}">
+      ${Object.entries(WORKOUTS).map(([k, w]) => {
+        const last = sorted.filter((s) => s.workout === k).at(-1);
+        const thisWk = sorted.filter((s) => s.workout === k && weekOf(s.date) === thisWeek).length;
+        const info = thisWk ? `feito esta semana${thisWk > 1 ? ` (${thisWk}x)` : ''}` : last ? `último: ${fmtDate(last.date)}` : 'ainda não feito';
+        return `
+        <button data-act="start" data-w="${k}">
           <div class="letter">${k}</div>
           <div class="small">${esc(w.name)}</div>
-          <div class="tiny">${w.place}${k === sug ? ' · próximo' : ''}${k === 'D' ? ` · ${POINTS.workoutHome} pts` : ''}</div>
-        </button>`).join('')}
+          <div class="tiny">${w.place}${k === 'D' ? ` · ${POINTS.workoutHome} pts` : ''}</div>
+          <div class="tiny">${info}</div>
+        </button>`;
+      }).join('')}
     </div>
     <p class="tiny" style="margin-top:12px">O D substitui o B quando você não vai à academia, ou entra como extra 48h depois do B.</p>`;
 }
@@ -959,7 +965,6 @@ document.addEventListener('click', (e) => {
     }
     case 'go-train':
       tab = 'treino';
-      if (!state.draft) startDraft(nextWorkout(state.sessions));
       render();
       window.scrollTo(0, 0);
       break;
