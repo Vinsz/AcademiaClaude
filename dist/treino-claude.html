@@ -793,7 +793,7 @@ function suggestion(ex, last, lastHadPain) {
     const top = sets.filter((s) => (s.kg || 0) === maxKg);
     if (top.length < ex.sets) return { kind: 'keep', text: `Manter ${fmtNum(maxKg)} kg e completar as ${ex.sets} séries` };
     const minReps = Math.min(...top.slice(0, ex.sets).map((s) => s.reps || 0));
-    const bigStep = ex.repsFirst || (ex.step && maxKg > 0 && ex.step / maxKg > 0.3 ? ex.hi + 5 : null);
+    const bigStep = ex.repsFirst || (ex.step && maxKg > 0 && ex.step / maxKg > 0.25 ? ex.hi + 5 : null);
     if (minReps < ex.hi) return { kind: 'keep', text: `Manter ${fmtNum(maxKg)} kg, buscar ${ex.hi} reps em todas` };
     if (bigStep && minReps < bigStep) {
       return { kind: 'reps', text: `Degrau grande (+${fmtNum(ex.step)} kg): subir reps até ${bigStep} ou descer mais devagar` };
