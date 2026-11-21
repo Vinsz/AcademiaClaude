@@ -38,13 +38,13 @@ export const WORKOUTS = {
     place: 'Academia',
     exercises: [
       { id: 'eliptico', name: 'Elíptico', type: 'cardio', target: '15 min' },
-      { id: 'remada', name: 'Remada sentada (máquina)', type: 'weight', sets: 3, lo: 12, hi: 15, rest: 90, step: 7 },
-      { id: 'crossover', name: 'Cross over (polia alta)', type: 'weight', sets: 3, lo: 12, hi: 12, rest: 60, step: 1 },
+      { id: 'remada', name: 'Remada sentada na polia (triângulo ou barra reta)', type: 'weight', sets: 3, lo: 12, hi: 15, rest: 90, step: 7 },
+      { id: 'crossover', name: 'Cross over (polia alta)', type: 'weight', sets: 3, lo: 12, hi: 12, rest: 60, step: 2.5, repsFirst: 20 },
       { id: 'elev_lateral', name: 'Elevação lateral', type: 'weight', sets: 3, lo: 12, hi: 12, rest: 60, step: 1 },
       { id: 'puxada_fechada', name: 'Puxada fechada (triângulo)', type: 'weight', sets: 3, lo: 12, hi: 12, rest: 90, step: 7 },
       { id: 'rosca_martelo', name: 'Rosca martelo', type: 'weight', sets: 3, lo: 12, hi: 15, rest: 60, step: 1 },
       { id: 'triceps_testa', name: 'Tríceps testa', type: 'weight', sets: 3, lo: 12, hi: 15, rest: 60, step: 1 },
-      { id: 'core_c', name: 'Pallof press (polia)', type: 'weight', sets: 3, lo: 10, hi: 12, rest: 45, step: 1 },
+      { id: 'core_c', name: 'Pallof press (polia, cada lado)', type: 'weight', sets: 3, lo: 10, hi: 12, rest: 45, step: 2.5 },
     ],
   },
   D: {
