@@ -23,7 +23,9 @@ export const WORKOUTS = {
     name: 'Inferior adaptado',
     place: 'Academia',
     exercises: [
-      { id: 'bicicleta', name: 'Bicicleta reclinada', type: 'cardio', target: '10-15 min' },
+      // group: basta fazer um dos exercícios do grupo
+      { id: 'bicicleta', name: 'Bicicleta reclinada', type: 'cardio', target: '10-15 min · ou a sem encosto', group: 'bike' },
+      { id: 'bike_ereta', name: 'Bicicleta sem encosto', type: 'cardio', target: '15 min · ou a reclinada', group: 'bike' },
       { id: 'legpress', name: 'Leg press', type: 'weight', sets: 4, lo: 15, hi: 15, rest: 90, step: 9, repsFirst: 20 },
       { id: 'extensora', name: 'Cadeira extensora', type: 'weight', sets: 3, lo: 15, hi: 15, rest: 60, step: 7 },
       { id: 'flexora', name: 'Cadeira flexora', type: 'weight', sets: 3, lo: 15, hi: 15, rest: 60, step: 7 },

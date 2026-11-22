@@ -138,8 +138,18 @@ export function computeRecords(sessions) {
 // ---------- pontos ----------
 export function sessionBasePoints(s) {
   const def = WORKOUTS[s.workout];
-  const required = def.exercises.filter((e) => !e.optional);
-  const done = required.filter((e) => s.entries[e.id] && s.entries[e.id].length).length;
+  // cada requisito é uma lista de ids; um grupo (ex.: duas bicicletas) conta como um só
+  const required = [];
+  const seen = new Set();
+  for (const e of def.exercises) {
+    if (e.optional) continue;
+    if (e.group) {
+      if (seen.has(e.group)) continue;
+      seen.add(e.group);
+      required.push(def.exercises.filter((x) => x.group === e.group).map((x) => x.id));
+    } else required.push([e.id]);
+  }
+  const done = required.filter((ids) => ids.some((id) => s.entries[id] && s.entries[id].length)).length;
   const base = s.workout === 'D' ? POINTS.workoutHome : POINTS.workout;
   if (done >= required.length) return { points: base, done, total: required.length, complete: true };
   const pts = Math.min(base, Math.max(POINTS.minIncomplete, Math.round((base * done) / required.length)));

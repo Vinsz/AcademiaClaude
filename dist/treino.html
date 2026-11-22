@@ -462,7 +462,9 @@ const WORKOUTS = {
     name: 'Inferior adaptado',
     place: 'Academia',
     exercises: [
-      { id: 'bicicleta', name: 'Bicicleta reclinada', type: 'cardio', target: '10-15 min' },
+      // group: basta fazer um dos exercícios do grupo
+      { id: 'bicicleta', name: 'Bicicleta reclinada', type: 'cardio', target: '10-15 min · ou a sem encosto', group: 'bike' },
+      { id: 'bike_ereta', name: 'Bicicleta sem encosto', type: 'cardio', target: '15 min · ou a reclinada', group: 'bike' },
       { id: 'legpress', name: 'Leg press', type: 'weight', sets: 4, lo: 15, hi: 15, rest: 90, step: 9, repsFirst: 20 },
       { id: 'extensora', name: 'Cadeira extensora', type: 'weight', sets: 3, lo: 15, hi: 15, rest: 60, step: 7 },
       { id: 'flexora', name: 'Cadeira flexora', type: 'weight', sets: 3, lo: 15, hi: 15, rest: 60, step: 7 },
@@ -667,8 +669,18 @@ function computeRecords(sessions) {
 // ---------- pontos ----------
 function sessionBasePoints(s) {
   const def = WORKOUTS[s.workout];
-  const required = def.exercises.filter((e) => !e.optional);
-  const done = required.filter((e) => s.entries[e.id] && s.entries[e.id].length).length;
+  // cada requisito é uma lista de ids; um grupo (ex.: duas bicicletas) conta como um só
+  const required = [];
+  const seen = new Set();
+  for (const e of def.exercises) {
+    if (e.optional) continue;
+    if (e.group) {
+      if (seen.has(e.group)) continue;
+      seen.add(e.group);
+      required.push(def.exercises.filter((x) => x.group === e.group).map((x) => x.id));
+    } else required.push([e.id]);
+  }
+  const done = required.filter((ids) => ids.some((id) => s.entries[id] && s.entries[id].length)).length;
   const base = s.workout === 'D' ? POINTS.workoutHome : POINTS.workout;
   if (done >= required.length) return { points: base, done, total: required.length, complete: true };
   const pts = Math.min(base, Math.max(POINTS.minIncomplete, Math.round((base * done) / required.length)));
@@ -1468,7 +1480,9 @@ function viewHistory() {
   return seg + (list.length ? list.map((s) => {
     const b = sessionBasePoints(s);
     const recs = records.get(s.id) || [];
-    const exs = WORKOUTS[s.workout].exercises;
+    // num grupo (ex.: duas bicicletas), mostra só a que foi feita
+    const exs = WORKOUTS[s.workout].exercises.filter((ex) => s.entries[ex.id] || !ex.group
+      || !WORKOUTS[s.workout].exercises.some((o) => o.group === ex.group && o.id !== ex.id && s.entries[o.id]));
     return `
       <details class="card">
         <summary class="row between" style="list-style:none;cursor:pointer">

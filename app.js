@@ -562,7 +562,9 @@ function viewHistory() {
   return seg + (list.length ? list.map((s) => {
     const b = sessionBasePoints(s);
     const recs = records.get(s.id) || [];
-    const exs = WORKOUTS[s.workout].exercises;
+    // num grupo (ex.: duas bicicletas), mostra só a que foi feita
+    const exs = WORKOUTS[s.workout].exercises.filter((ex) => s.entries[ex.id] || !ex.group
+      || !WORKOUTS[s.workout].exercises.some((o) => o.group === ex.group && o.id !== ex.id && s.entries[o.id]));
     return `
       <details class="card">
         <summary class="row between" style="list-style:none;cursor:pointer">
